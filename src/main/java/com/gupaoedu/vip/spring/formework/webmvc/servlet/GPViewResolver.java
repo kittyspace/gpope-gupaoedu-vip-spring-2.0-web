@@ -24,7 +24,7 @@ public class GPViewResolver {
             return null;
         }
         viewName = viewName.endsWith(DEFAULT_TEMPLATE_SUFFX)?viewName:(viewName + DEFAULT_TEMPLATE_SUFFX);
-        File templateFile = new File((templateRootDir.getParent() + "/" + viewName).replaceAll("/+", "/"));
+        File templateFile = new File((templateRootDir.getPath() + "/" + viewName).replaceAll("/+", "/"));
 
         return new GPView(templateFile);
     }
