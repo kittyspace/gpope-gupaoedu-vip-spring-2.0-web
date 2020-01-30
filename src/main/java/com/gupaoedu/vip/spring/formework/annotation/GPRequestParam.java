@@ -11,9 +11,9 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface GPRequestParam {
-	
+
 	String value() default "";
-	
+
 	boolean required() default true;
 
 }

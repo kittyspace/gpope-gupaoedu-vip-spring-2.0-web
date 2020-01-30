@@ -6,12 +6,14 @@ import com.gupaoedu.vip.spring.formework.annotation.GPService;
 import com.gupaoedu.vip.spring.formework.beans.GPBeanFactory;
 import com.gupaoedu.vip.spring.formework.beans.GPBeanWrapper;
 import com.gupaoedu.vip.spring.formework.beans.config.GPBeanDefinition;
+import com.gupaoedu.vip.spring.formework.beans.config.GPBeanPostProcessor;
 import com.gupaoedu.vip.spring.formework.beans.support.GPBeanDefinitionReader;
 import com.gupaoedu.vip.spring.formework.beans.support.GPDefaultListableBeanFactory;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -80,10 +82,23 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
 
         GPBeanDefinition beanDefinition = this.beanDefinitionMap.get(beanName);
 
-        
+        Object instance = null;
 
+        //这个逻辑还不严谨，自己可以去参考spring源码
+        //这里可以用工厂模式+策略模式
+        //Processor是做什么的？类在初始化 前后后都做个通知/回调，比如到时候会扫描类，所有实现了InitArawe接口的都去触发通知,
+        //根据业务场景的需要来，例：登录，登录的这个类只要创建了就把它存到缓存里面，这样一个动作。
+        //这里是前置通知，跟aop还不一样，aop是后置通知；这是顶层设计，aop是应用层设计
+        GPBeanPostProcessor postProcessor = new GPBeanPostProcessor();
+        postProcessor.postProcessBeforeInitialization(instance,beanName);
+
+        instance = instantiateBean(beanName, beanDefinition);
+
+        //3 把这个对象封装到BeanWrapper中
+        GPBeanWrapper beanWrapper = new GPBeanWrapper(instance);
+        // singletonObjects
+        // factoryBeanInstanceCache
         //1 初始化
-        GPBeanWrapper gpBeanWrapper = instantiateBean(beanName,beanDefinition );
 
         //为什么要把初始化和注入分开成两个步骤，不在一个方法里面？
         //class A{ B b;}
@@ -94,16 +109,18 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
 //        if(this.factoryBeanInstanceCache.containsKey(beanName)){
 //            throw new Exception("the" +beanName+" is exists!");
 //        }
-        this.factoryBeanInstanceCache.put(beanName,gpBeanWrapper);
+        this.factoryBeanInstanceCache.put(beanName,beanWrapper);
+
+        postProcessor.postProcessAfterInitialization(instance,beanName);
 
         //3 注入
-        populateBean( beanName, new GPBeanDefinition(),gpBeanWrapper);
+        populateBean( beanName, new GPBeanDefinition(),beanWrapper);
 
         return this.factoryBeanInstanceCache.get(beanName).getWrappedInstance();
     }
 
 
-    private GPBeanWrapper instantiateBean(String beanName, GPBeanDefinition gpBeanDefinition) {
+    private Object instantiateBean(String beanName, GPBeanDefinition gpBeanDefinition) {
         //1 拿到要实例化的对象的类名
         String className = gpBeanDefinition.getBeanClassName();
 
@@ -123,14 +140,8 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
         }catch (Exception e){
             e.printStackTrace();
         }
-        //3 把这个对象封装到BeanWrapper中
-        GPBeanWrapper beanWrapper = new GPBeanWrapper(instance);
-        // singletonObjects
 
-        // factoryBeanInstanceCache
-
-        //
-        return beanWrapper;
+        return instance;
 
     }
 
@@ -167,5 +178,16 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
         }
     }
 
+    public String[] getBeanDefinitionNames(){
+        return this.beanDefinitionMap.keySet().toArray(new  String[this.beanDefinitionMap.size()]);
+    }
+
+    public int getBeanDefinitionCount(){
+        return this.beanDefinitionMap.size();
+    }
+
+    public Properties getConfig(){
+        return this.reader.getConfig();
+    }
 
 }

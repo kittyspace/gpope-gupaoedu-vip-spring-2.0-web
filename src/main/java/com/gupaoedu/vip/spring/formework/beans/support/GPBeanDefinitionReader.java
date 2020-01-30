@@ -78,15 +78,41 @@ public class GPBeanDefinitionReader {
     //把配置文件中扫描到的所有的配置信息转换为GPBeanDefinition对象，以便于之后IOC操作方便
     public List<GPBeanDefinition> loadBeanDefinitions(){
         List<GPBeanDefinition> result = new ArrayList<GPBeanDefinition>();
+        try{
             for (String className: registyBeanClasses){
-                GPBeanDefinition gpBeanDefinition = doCreateBeanDefinition(className);
-                if(null == gpBeanDefinition){
-                    continue;
-                }
-                result.add(gpBeanDefinition);
+                Class<?> beanClass = Class.forName(className);
+                //如果是一个接口，是不能实例化的
+                //用它实现类来实例化
+                if(beanClass.isInterface()) { continue; }
 
+                //beanName有三种情况:
+                //1、默认是类名首字母小写
+                //2、自定义名字
+                //3、接口注入
+                result.add(doCreateBeanDefinition(toLowerFirstCase(beanClass.getSimpleName()),beanClass.getName()));
+//                result.add(doCreateBeanDefinition(beanClass.getName(),beanClass.getName()));
+
+                Class<?> [] interfaces = beanClass.getInterfaces();
+                for (Class<?> i : interfaces) {
+                    //如果是多个实现类，只能覆盖
+                    //为什么？因为Spring没那么智能，就是这么傻
+                    //这个时候，可以自定义名字
+                    result.add(doCreateBeanDefinition(i.getName(),beanClass.getName()));
+                }
             }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
         return result;
+    }
+
+    //把每一个配信息解析成一个BeanDefinition
+    private GPBeanDefinition doCreateBeanDefinition(String factoryBeanName,String beanClassName){
+        GPBeanDefinition beanDefinition = new GPBeanDefinition();
+        beanDefinition.setBeanClassName(beanClassName);
+        beanDefinition.setFactoryBeanName(factoryBeanName);
+        return beanDefinition;
     }
 
     //把每一个配置信息解析成一个BeanDefinition
