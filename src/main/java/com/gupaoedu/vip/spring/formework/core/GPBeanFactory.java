@@ -1,4 +1,4 @@
-package com.gupaoedu.vip.spring.formework.beans;
+package com.gupaoedu.vip.spring.formework.core;
 
 /**
  * @Discription: 单例工厂的顶层设计

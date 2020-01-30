@@ -3,7 +3,7 @@ package com.gupaoedu.vip.spring.formework.context;
 import com.gupaoedu.vip.spring.formework.annotation.GPAutowired;
 import com.gupaoedu.vip.spring.formework.annotation.GPController;
 import com.gupaoedu.vip.spring.formework.annotation.GPService;
-import com.gupaoedu.vip.spring.formework.beans.GPBeanFactory;
+import com.gupaoedu.vip.spring.formework.core.GPBeanFactory;
 import com.gupaoedu.vip.spring.formework.beans.GPBeanWrapper;
 import com.gupaoedu.vip.spring.formework.beans.config.GPBeanDefinition;
 import com.gupaoedu.vip.spring.formework.beans.config.GPBeanPostProcessor;
