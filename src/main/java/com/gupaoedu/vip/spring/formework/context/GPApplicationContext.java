@@ -3,6 +3,11 @@ package com.gupaoedu.vip.spring.formework.context;
 import com.gupaoedu.vip.spring.formework.annotation.GPAutowired;
 import com.gupaoedu.vip.spring.formework.annotation.GPController;
 import com.gupaoedu.vip.spring.formework.annotation.GPService;
+import com.gupaoedu.vip.spring.formework.aop.GPAopProxy;
+import com.gupaoedu.vip.spring.formework.aop.GPCglibAopProxy;
+import com.gupaoedu.vip.spring.formework.aop.GPJdkDynamicAopProxy;
+import com.gupaoedu.vip.spring.formework.aop.config.GPAopConfig;
+import com.gupaoedu.vip.spring.formework.aop.support.GPAdvisedSupport;
 import com.gupaoedu.vip.spring.formework.core.GPBeanFactory;
 import com.gupaoedu.vip.spring.formework.beans.GPBeanWrapper;
 import com.gupaoedu.vip.spring.formework.beans.config.GPBeanDefinition;
@@ -96,6 +101,12 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
 
         //3 把这个对象封装到BeanWrapper中
         GPBeanWrapper beanWrapper = new GPBeanWrapper(instance);
+
+        //创建一个代理的策略，看是用cglib还是用jdk
+//        GPAopProxy proxy ;
+//        Object prosy = proxy.getProxy();
+//        createProxy()
+
         // singletonObjects
         // factoryBeanInstanceCache
         //1 初始化
@@ -133,6 +144,16 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
             }else{
                 Class<?> clazz = Class.forName(className);
                 instance = clazz.newInstance();
+
+                GPAdvisedSupport config = instantionAopConfig(gpBeanDefinition);
+                config.setTargetClass(clazz);
+                config.setTarget(instance);
+
+                //符合PointCut的规则的话，创建代理对象
+                if(config.pointCutMatch()) {
+                    instance = createProxy(config).getProxy();
+                }
+
                 this.singletonObjects.put(className,instance);
                 //多存个没关系
                 this.singletonObjects.put(gpBeanDefinition.getFactoryBeanName(),instance);
@@ -142,6 +163,28 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
         }
 
         return instance;
+
+    }
+
+    private GPAopProxy createProxy(GPAdvisedSupport config) {
+        Class<?> targetClass = config.getTargetClass();
+        if(targetClass.getInterfaces().length > 0 ){
+            return new GPJdkDynamicAopProxy(config);
+        }
+        return new GPCglibAopProxy(config);
+    }
+
+    private GPAdvisedSupport instantionAopConfig(GPBeanDefinition gpBeanDefinition) {
+
+        GPAopConfig config = new GPAopConfig();
+
+        config.setPointCut(this.reader.getConfig().getProperty("pointCut"));
+        config.setAspectClass(this.reader.getConfig().getProperty("aspectClass"));
+        config.setAspectBefore(this.reader.getConfig().getProperty("aspectBefore"));
+        config.setAspectAfter(this.reader.getConfig().getProperty("aspectAfter"));
+        config.setAspectAfterThrow(this.reader.getConfig().getProperty("aspectAfterThrow"));
+        config.setAspectAfterThrowingName(this.reader.getConfig().getProperty("aspectAfterThrowingName"));
+        return new GPAdvisedSupport(config);
 
     }
 
